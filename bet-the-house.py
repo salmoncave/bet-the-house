@@ -2,13 +2,6 @@ import random
 import pprint
 from enum import Enum
 
-# May not need, currently deprecated. Can remove if enum becomes useless
-class CardSuit(Enum):
-    CLUBS = 1
-    DIAMONDS = 2
-    HEARTS = 3
-    SPADES = 4
-
 class PlayingCard():
 
     def __init__(self, suit: str, card_type: str):
@@ -28,15 +21,14 @@ class PlayingCard():
         else:
             return 10
 
-#Generates standard deck
 class StandardDeck():
     
     def __init__(self):
         
         self.deck : list[PlayingCard] = self._generate_standard_deck()
-    
+#Generates standard deck
     def _generate_standard_deck(self):
-        card_types : list[str] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10","Jack","Queen","King","Ace"]
+        card_types : list[str] = ["2", "3", "4", "5", "6", "7", "8", "9", "10","Jack","Queen","King","Ace"]
         card_suits : list[str] = ["Clubs", "Diamonds", "Hearts", "Spades"]
         playing_deck : list[PlayingCard] = []
 
@@ -51,54 +43,62 @@ class DealingShoe():
 
     def __init__(self):
 
-        self.total_decks : int = 3
+        self.total_decks : int = 4
         self.card_shoe : list[PlayingCard] = self._generate_card_shoe(self.total_decks)
+        self.regen_threshold : float = (0.25 * (self.total_decks * 52))
+        
 
     def _generate_card_shoe(self, decks: int):
         shoe : list[PlayingCard] = []
         
         for deck in range(decks):
             shoe.extend(StandardDeck().deck)
-        
+
         return shoe
     
-    def draw_cards_from_shoe(self, cards_to_draw : int = 1):
+    def _regenerate_shoe(self):
+        self.card_shoe.clear()
+        self.card_shoe = self._generate_card_shoe(self.total_decks)
+        print("----------------")
+        print("SHOE RENEGERATED")
+        print("----------------")
+
+    ''' Most Important Function in Shoe, Responsible for the following in order:
+        - pick a random card from the cards available in the shoe
+        - adds the picked card to the drawn cards array to return later
+        - IMPORTANT: removes the card from the shoe so it cannot be drawn again, simulates card drawing randomization
+        - IMPORTANT: checks if the shoe is at its regen threshold and regenerates the shoe, simulates shuffling'''
+
+    def draw_cards_from_shoe(self, cards_to_draw : int = 1) -> list[PlayingCard] :
         drawn_cards : list[PlayingCard] = []
         
         for cards in range(cards_to_draw):
             random_card : PlayingCard = random.choice(self.card_shoe)
-            
-            drawn_cards.append(random_card)
+            print(random_card.name)
+
             self.card_shoe.remove(random_card)
-        
+            drawn_cards.append(random_card)
+
+            if len(self.card_shoe) <= self.regen_threshold:
+                self._regenerate_shoe()
+            
         return drawn_cards
 
-    def draw_full_shoe(self):
-        pass
 
-    def _regenerate_shoe(self, regen_threshold: int = 25):
-        pass
+def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
+    interpreted_cards : list[str] = []
+    interpreted_cards.clear()
 
-    def interpret_cards_to_text(self, cards : list[PlayingCard]):
-        interpreted_cards : list[str] = []
-        
-        for card in cards:
+    for card in cards:
             interpreted_cards.append(card.name)
 
-        return interpreted_cards
+    return interpreted_cards
 
 
 ## Starts gameplay structure, called by main
 def play_game():
-    ''' testdeck = StandardDeck()
-    print_range = range(26)
-    for i in print_range:
-        print(testdeck.pick_random_card().name)
-    print("---------------------------------------------------")
-    for n in print_range:
-        print(testdeck.pick_random_card().name) '''
     testshoe = DealingShoe()
-    pprint.pprint(testshoe.interpret_cards_to_text(testshoe.draw_cards_from_shoe(5)))
+    testshoe.draw_cards_from_shoe(500)
 
 def main():
     play_game()
