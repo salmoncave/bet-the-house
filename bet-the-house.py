@@ -95,7 +95,7 @@ class Entity():
         print(f"\n{self.entity_name} Currently Holds:")
         for card in self.inventory:
             print(card.name)
-        print(f"\n{self.entity_name} Total Card Value: {self.current_card_value}")
+        print(f"\n{self.entity_name} Total Card Value: {self.current_card_value}\n")
 
     def add_cards_to_inventory(self, cards_to_add: list[PlayingCard]):
         for card in cards_to_add:
@@ -118,11 +118,61 @@ class Player(Entity):
     def __init__(self):
         Entity.__init__(self)
         self.entity_name: str = "Player"
-        self.unrecognized_input_warning: str = "Player Input Not Recognized, Please Try Again\n"
         self.current_money: int = 0
+        self.unrecognized_input_warning: str = "Invalid Input Detected, Please Try Again!\n"
+        self.loss_message : str = "You've Lost! Too Bad, Restart Game?\n"
+
+    def _process_player_action(self, chosen_action: str):
+        if chosen_action == "hit":
+            added_cards: list [PlayingCard] = gameshoe.draw_cards_from_shoe(1)
+            for card in added_cards:
+                if card.type == "Ace":
+                    self._choose_ace_value(ace_card= card)                    
+            self.add_cards_to_inventory(cards_to_add= added_cards)
+            self._check_player_score()
+        elif chosen_action == "stand":
+            pass
+        elif chosen_action == "double down":
+            self.add_cards_to_inventory(gameshoe.draw_cards_from_shoe(2))
+            self._check_player_score()
+        elif chosen_action == "forfeit":
+            pass
+        elif chosen_action == "quit game":
+            pass
+
+    def _check_player_score(self):
+        if self.current_card_value > 21:
+            self._player_loss()
+        else:
+            self.offer_player_action()
+    
+    def _player_loss(self):
+        leave_msg = "Thanks for Playing, See Ya Later!"
+        restart_choice : str = input(f"{self.loss_message}").lower()
+        
+        if restart_choice == "yes" or restart_choice == "y":
+            play_game()
+        elif restart_choice == "no" or restart_choice == "n":
+            print(leave_msg)
+        else:
+            print(self.unrecognized_input_warning)
+            
+    def _display_player_money(self):
+        print(f"{self.entity_name} Current Money: {self.current_money}\n")
+    
+    def _choose_ace_value(self, ace_card : PlayingCard):
+        ace_msg : str = "\nYou've been dealt and Ace! Please type either '1' or '11' for the Ace's value\n"
+        ace_value : int = input(f"{ace_msg}").lower()
+        if ace_value == "11":
+            ace_card.value = 11
+        if ace_value == "1":
+            ace_card.value = 1
+        else:
+            print(self.unrecognized_input_warning)
+            self._choose_ace_value(ace_card)
 
     def offer_player_action(self):
-        prompt_msg : str = "Available Actions: 'hit', 'stand', 'double down', 'forfeit', 'quit game\n"
+        prompt_msg : str = "Available Actions: 'hit', 'stand', 'double down', 'forfeit', 'quit game'\n"
         action_choice: str = input(f"{prompt_msg}").lower()
 
         if (action_choice == "hit" or 
@@ -136,28 +186,6 @@ class Player(Entity):
             print(self.unrecognized_input_warning)
             self.offer_player_action()
 
-    def _process_player_action(self, chosen_action: str):
-        if chosen_action == "hit":
-            self.add_cards_to_inventory(gameshoe.draw_cards_from_shoe(1))
-            self._check_player_score()
-        if chosen_action == "stand":
-            pass
-        if chosen_action == "double down":
-            self.add_cards_to_inventory(gameshoe.draw_cards_from_shoe(2))
-            self._check_player_score()
-        if chosen_action == "forfeit":
-            pass
-        if chosen_action == "quit game":
-            pass
-
-    def _check_player_score(self):
-        if self.current_card_value > 21:
-            print("You lose! Too bad. See Ya Later!")
-        else:
-            self.offer_player_action()
-    
-    def _display_player_money(self):
-        print(f"{self.entity_name} Current Money: {self.current_money}\n")
 
 '''---------- GAMEPLAY FUNCTIONS -----------'''
 
