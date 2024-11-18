@@ -74,7 +74,7 @@ class DealingShoe():
         
         for cards in range(cards_to_draw):
             random_card : PlayingCard = random.choice(self.card_shoe)
-            print(random_card.name)
+            '''print(random_card.name)'''
 
             self.card_shoe.remove(random_card)
             drawn_cards.append(random_card)
@@ -84,6 +84,40 @@ class DealingShoe():
             
         return drawn_cards
 
+class Entity():
+    
+    def __init__(self):
+        self.entity_name : str = "Entity"
+        self.inventory : list[PlayingCard] = []
+        self.current_card_value : int = 0
+
+    def add_cards_to_inventory(self, cards_to_add: list[PlayingCard]):
+        for card in cards_to_add:
+            self.inventory.append(card)
+            self.current_card_value += card.value
+
+    def clear_cards_from_inventory(self):
+        self.inventory = []
+        self.current_score_value = 0
+
+    def display_inventory(self):
+        for card in self.inventory:
+            print(f"{self.entity_name} Holds: {card.name}")
+        print(f"{self.entity_name} Total Card Value: {self.current_card_value}")
+
+class Dealer(Entity):
+    
+    def __init__(self):
+        Entity.__init__(self)
+        self.entity_name = "Dealer"
+
+class Player(Entity):
+   
+    def __init__(self):
+        Entity.__init__(self)
+        self.entity_name = "Player"
+
+'''---------- GAMEPLAY FUNCTIONS -----------'''
 
 def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
     interpreted_cards : list[str] = []
@@ -98,7 +132,15 @@ def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
 ## Starts gameplay structure, called by main
 def play_game():
     testshoe = DealingShoe()
-    testshoe.draw_cards_from_shoe(500)
+    testplayer = Player()
+    testdealer = Dealer()
+    '''testshoe.draw_cards_from_shoe(100000)'''
+    for i in range(1):
+        testplayer.add_cards_to_inventory(testshoe.draw_cards_from_shoe(3))
+        testdealer.add_cards_to_inventory(testshoe.draw_cards_from_shoe(3))
+    testplayer.display_inventory()
+    testdealer.display_inventory()
+
 
 def main():
     play_game()
