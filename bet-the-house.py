@@ -26,6 +26,7 @@ class StandardDeck():
     def __init__(self):
         
         self.deck : list[PlayingCard] = self._generate_standard_deck()
+
 #Generates standard deck
     def _generate_standard_deck(self):
         card_types : list[str] = ["2", "3", "4", "5", "6", "7", "8", "9", "10","Jack","Queen","King","Ace"]
@@ -47,7 +48,6 @@ class DealingShoe():
         self.card_shoe : list[PlayingCard] = self._generate_card_shoe(self.total_decks)
         self.regen_threshold : float = (0.25 * (self.total_decks * 52))
         
-
     def _generate_card_shoe(self, decks: int):
         shoe : list[PlayingCard] = []
         
@@ -91,19 +91,21 @@ class Entity():
         self.inventory : list[PlayingCard] = []
         self.current_card_value : int = 0
 
+    def _display_inventory(self):
+        print(f"\n{self.entity_name} Currently Holds:")
+        for card in self.inventory:
+            print(card.name)
+        print(f"\n{self.entity_name} Total Card Value: {self.current_card_value}")
+
     def add_cards_to_inventory(self, cards_to_add: list[PlayingCard]):
         for card in cards_to_add:
             self.inventory.append(card)
             self.current_card_value += card.value
+        self._display_inventory()
 
     def clear_cards_from_inventory(self):
         self.inventory = []
-        self.current_score_value = 0
-
-    def display_inventory(self):
-        for card in self.inventory:
-            print(f"{self.entity_name} Holds: {card.name}")
-        print(f"{self.entity_name} Total Card Value: {self.current_card_value}")
+        self.current_card_value = 0
 
 class Dealer(Entity):
     
@@ -115,7 +117,47 @@ class Player(Entity):
    
     def __init__(self):
         Entity.__init__(self)
-        self.entity_name = "Player"
+        self.entity_name: str = "Player"
+        self.unrecognized_input_warning: str = "Player Input Not Recognized, Please Try Again\n"
+        self.current_money: int = 0
+
+    def offer_player_action(self):
+        prompt_msg : str = "Available Actions: 'hit', 'stand', 'double down', 'forfeit', 'quit game\n"
+        action_choice: str = input(f"{prompt_msg}").lower()
+
+        if (action_choice == "hit" or 
+            action_choice == "stand" or 
+            action_choice == "double down" or 
+            action_choice == "forfeit" or
+            action_choice == "quit game"):
+
+            self._process_player_action(action_choice)
+        else:
+            print(self.unrecognized_input_warning)
+            self.offer_player_action()
+
+    def _process_player_action(self, chosen_action: str):
+        if chosen_action == "hit":
+            self.add_cards_to_inventory(gameshoe.draw_cards_from_shoe(1))
+            self._check_player_score()
+        if chosen_action == "stand":
+            pass
+        if chosen_action == "double down":
+            self.add_cards_to_inventory(gameshoe.draw_cards_from_shoe(2))
+            self._check_player_score()
+        if chosen_action == "forfeit":
+            pass
+        if chosen_action == "quit game":
+            pass
+
+    def _check_player_score(self):
+        if self.current_card_value > 21:
+            print("You lose! Too bad. See Ya Later!")
+        else:
+            self.offer_player_action()
+    
+    def _display_player_money(self):
+        print(f"{self.entity_name} Current Money: {self.current_money}\n")
 
 '''---------- GAMEPLAY FUNCTIONS -----------'''
 
@@ -131,16 +173,22 @@ def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
 
 ## Starts gameplay structure, called by main
 def play_game():
-    testshoe = DealingShoe()
-    testplayer = Player()
-    testdealer = Dealer()
-    '''testshoe.draw_cards_from_shoe(100000)'''
-    for i in range(1):
-        testplayer.add_cards_to_inventory(testshoe.draw_cards_from_shoe(3))
-        testdealer.add_cards_to_inventory(testshoe.draw_cards_from_shoe(3))
-    testplayer.display_inventory()
-    testdealer.display_inventory()
+    player : Player = Player()
+    
+    welcome_msg : str = ("\n" + "\n" + "\n"
+                        "--------------------------------------------\n" +
+                        "Welcome to the Digital Arts Casino!\n" +
+                        "You can't earn real money here, but at least you can pretend like you're not wasting your time!\n" +
+                        "Let's get started shall we? Here we go!\n"
+                        "--------------------------------------------\n")
 
+    print(welcome_msg)
+    player.offer_player_action()
+
+'''Gameshoe and dealer currently global variables for access, looking for another solution'''
+
+gameshoe : DealingShoe = DealingShoe()
+dealer : Dealer = Dealer()
 
 def main():
     play_game()
