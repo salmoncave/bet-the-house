@@ -47,7 +47,6 @@ class DealingShoe():
         self.total_decks : int = 4
         self.card_shoe : list[PlayingCard] = self._generate_card_shoe(self.total_decks)
         self.regen_threshold : float = (0.25 * (self.total_decks * 52))
-        self.generation_msg : str = "\nShuffling Shoe...\n"
         
     def _generate_card_shoe(self, decks: int):
         shoe : list[PlayingCard] = []
@@ -93,7 +92,7 @@ class Entity():
         self.inventory : list[PlayingCard] = []
         self.current_card_value : int = 0
 
-    def _display_inventory(self):
+    def display_inventory(self):
         print(f"\n{self.entity_name} Currently Holds:")
         for card in self.inventory:
             print(card.name)
@@ -105,13 +104,21 @@ class Entity():
         for card in cards_to_add:
             self.inventory.append(card)
             self.current_card_value += card.value
+        
+    def _update_current_card_value(self):
+        new_card_value : int = 0
+        
+        for card in self.inventory:
+            new_card_value += card.value
+        
+        self.current_card_value = new_card_value
 
     def clear_cards_from_inventory(self):
         self.inventory = []
         self.current_card_value = 0
     
     def deal_starting_hand(self):
-        pass
+        self._draw_cards_to_inventory(2)
 
 class Dealer(Entity):
     
@@ -124,10 +131,6 @@ class Dealer(Entity):
         print(f"\n{self.entity_name} Has 1 Card Face-Down")
         print(f"{self.entity_name} Total Known Card Value: {self.inventory[0].value}")
 
-    def deal_starting_hand(self):
-        self._draw_cards_to_inventory(2)
-        self.display_starting_cards()
-
 class Player(Entity):
    
     def __init__(self):
@@ -135,31 +138,36 @@ class Player(Entity):
         self.entity_name: str = "Player"
         self.current_money: int = 0
         self.unrecognized_input_warning: str = "Invalid Input Detected, Please Try Again!\n"
-        self.loss_message : str = "You've Lost! Too Bad, Restart Game?\n"
+        self.win_message : str = "\nCongrats, you've hit Blackjack! You Win: NOTHING\n"
+        self.loss_message : str = "\nYou've Lost! Too Bad, Restart Game?\n"
 
     def _process_player_action(self, chosen_action: str):
         if chosen_action == "hit":
            self._player_hit()
         elif chosen_action == "stand":
-            pass
-# Take one card, double bet, can no longer hit or double down
+            self._player_stand()
         elif chosen_action == "double down":
-            self._draw_cards_to_inventory(1)
-            self._check_player_score()
-# Lose half bet, quit round, keep playing
+            self._player_double_down()
         elif chosen_action == "forfeit":
-            pass
+            self._player_forfeit
         elif chosen_action == "quit game":
             pass
 
     def _check_player_score(self):
         if self.current_card_value > 21:
             self._player_loss()
+        elif self.current_card_value == 21:
+            self._player_win()
         else:
             self.offer_player_action()
     
+    def _player_win(self):
+        print(self.win_message)
+        self.display_inventory()
+
     def _player_loss(self):
         leave_msg = "Thanks for Playing, See Ya Later!"
+        self.display_inventory()
         restart_choice : str = input(f"{self.loss_message}").lower()
         
         if restart_choice == "yes" or restart_choice == "y":
@@ -173,13 +181,13 @@ class Player(Entity):
         print(f"{self.entity_name} Current Money: {self.current_money}\n")
     
     def _check_ace_values(self):
-        ace_name : str
-        ace_msg : str = (f"\nPlease type either '1' or '11' for the value of {ace_name}\n")
+        #ace_name : str = "No Ace Chosen"
+        #ace_msg : str = (f"\nPlease type either '1' or '11' for the value of {ace_name}\n")
         
         for card in self.inventory:
             if card.type == "Ace":
                 ace_name = card.name
-                ace_value : int = input(f"{ace_msg}").lower()
+                ace_value = input(f"\nType either '1' or '11' for the value of {ace_name}\n").lower()
                 if ace_value == "11":
                     card.value = 11
                 if ace_value == "1":
@@ -187,18 +195,25 @@ class Player(Entity):
                 else:
                     print(self.unrecognized_input_warning)
                     self._check_ace_values(self)
+        
+        self._update_current_card_value()
 
     def _player_hit(self):
         self._draw_cards_to_inventory(1)
         self._check_ace_values()
         self._check_player_score()
-
-    def deal_starting_hand(self):
-        self._draw_cards_to_inventory(2)
-        self._display_inventory()
     
+    def _player_double_down(self):
+        pass
+
+    def _player_forfeit(self):
+        pass
+    
+    def _player_stand(self):
+        pass
+
     def offer_player_action(self):
-        self._display_inventory()
+        self.display_inventory()
         prompt_msg : str = "Available Actions: 'hit', 'stand', 'double down', 'forfeit', 'quit game'\n"
         action_choice: str = input(f"{prompt_msg}").lower()
 
@@ -234,11 +249,15 @@ def initialize_game(dealer: Dealer, player: Player, shoe: DealingShoe, starting_
     welcome_msg : str = ("\n" + "\n" + "\n"
                         "--------------------------------------------\n" +
                         "Welcome to the Digital Arts Casino!\n" +
-                        "You can't earn real money here, but at least you can pretend like you're not wasting your time!\n" +
+                        "You can't waste real money here, but at least you can pretend like you're not wasting your time!\n" +
                         "Let's get started shall we? Here we go!\n"
                         "--------------------------------------------\n")
+    dealing_msg : str = "\nDealing Cards...\n"
+    generation_msg : str = "Shuffling Shoe...\n"
 
     print(welcome_msg)
+    print(dealing_msg)  
+    print(generation_msg)
 
 def check_natural_blackjack(dealer: Dealer, player: Player):
     message_type : str = "No message set, supply gameplay message"
@@ -253,20 +272,23 @@ def check_natural_blackjack(dealer: Dealer, player: Player):
     else:
         message_type = "nonatural"
         is_natural_game = False
-    
+
     print(display_gameplay_message(message_type))
+    if is_natural_game:
+        display_held_cards(dealer, player)
+    
     return is_natural_game
 
 def play_round(dealer: Dealer, player: Player, shoe: DealingShoe):
-    dealing_msg : str = "\nDealing Cards...\n"
-    
-    print(dealing_msg)
     dealer.deal_starting_hand()
     player.deal_starting_hand()
     if not check_natural_blackjack(dealer, player):
+        dealer.display_starting_cards()
         player.offer_player_action()
 
-
+def display_held_cards(dealer: Dealer, player: Player):
+    dealer.display_inventory()
+    player.display_inventory()
             
 def display_gameplay_message(message_type: str):
     display_message: str = "No message set, supply gameplay message"
