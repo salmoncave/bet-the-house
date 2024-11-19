@@ -15,7 +15,7 @@ class PlayingCard():
         face_cards : list[str] = ["Jack", "Queen", "King"]
         if card_type == "Ace":
             return 11
-## Ace value set to 11 for now, TODO: add input to choose 1 or 11 after game structure implemented
+## Ace value set to 11 initially for the purpose of checking natural blackjacks. Player chooses otherwise
         if card_type not in face_cards:
             return int(card_type)
         else:
@@ -88,6 +88,7 @@ class Entity():
     
     def __init__(self):
         self.entity_name : str = "Entity"
+        self.gameshoe : DealingShoe
         self.inventory : list[PlayingCard] = []
         self.current_card_value : int = 0
 
@@ -101,7 +102,7 @@ class Entity():
         for card in cards_to_add:
             self.inventory.append(card)
             self.current_card_value += card.value
-        self._display_inventory()
+
 
     def clear_cards_from_inventory(self):
         self.inventory = []
@@ -112,6 +113,9 @@ class Dealer(Entity):
     def __init__(self):
         Entity.__init__(self)
         self.entity_name = "Dealer"
+    
+    def deal_starting_hands(self):
+        pass
 
 class Player(Entity):
    
@@ -124,16 +128,16 @@ class Player(Entity):
 
     def _process_player_action(self, chosen_action: str):
         if chosen_action == "hit":
-            added_cards: list [PlayingCard] = gameshoe.draw_cards_from_shoe(1)
+            added_cards: list [PlayingCard] = self.gameshoe.draw_cards_from_shoe(1)
             for card in added_cards:
                 if card.type == "Ace":
-                    self._choose_ace_value(ace_card= card)                    
+                    self._choose_ace_value(ace_card = card)
             self.add_cards_to_inventory(cards_to_add= added_cards)
             self._check_player_score()
         elif chosen_action == "stand":
             pass
         elif chosen_action == "double down":
-            self.add_cards_to_inventory(gameshoe.draw_cards_from_shoe(2))
+            self.add_cards_to_inventory(self.gameshoe.draw_cards_from_shoe(2))
             self._check_player_score()
         elif chosen_action == "forfeit":
             pass
@@ -160,8 +164,11 @@ class Player(Entity):
     def _display_player_money(self):
         print(f"{self.entity_name} Current Money: {self.current_money}\n")
     
-    def _choose_ace_value(self, ace_card : PlayingCard):
-        ace_msg : str = "\nYou've been dealt and Ace! Please type either '1' or '11' for the Ace's value\n"
+    def _choose_ace_value(self, ace_card : PlayingCard, from_hand : bool = False):
+        if from_hand:
+            ace_msg : str = "\nType '1' or '11' for the value of the Ace in hand"
+        else:
+            ace_msg : str = "\nYou've been dealt and Ace! Please type either '1' or '11' for the Ace's value\n"
         ace_value : int = input(f"{ace_msg}").lower()
         if ace_value == "11":
             ace_card.value = 11
@@ -172,6 +179,7 @@ class Player(Entity):
             self._choose_ace_value(ace_card)
 
     def offer_player_action(self):
+        self._display_inventory()
         prompt_msg : str = "Available Actions: 'hit', 'stand', 'double down', 'forfeit', 'quit game'\n"
         action_choice: str = input(f"{prompt_msg}").lower()
 
@@ -198,11 +206,16 @@ def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
 
     return interpreted_cards
 
+def play_round(dealer: Dealer, player: Player, shoe: DealingShoe):
+    dealer.deal_starting_hands()
+    check_natural_blackjack(dealer, player)
 
-## Starts gameplay structure, called by main
-def play_game():
-    player : Player = Player()
+def initialize_game(dealer: Dealer, player: Player, shoe: DealingShoe, starting_money: int = 500):
+    player.gameshoe = shoe
+    player.current_money = starting_money
     
+    dealer.gameshoe = shoe
+
     welcome_msg : str = ("\n" + "\n" + "\n"
                         "--------------------------------------------\n" +
                         "Welcome to the Digital Arts Casino!\n" +
@@ -211,12 +224,43 @@ def play_game():
                         "--------------------------------------------\n")
 
     print(welcome_msg)
-    player.offer_player_action()
 
-'''Gameshoe and dealer currently global variables for access, looking for another solution'''
+def check_natural_blackjack(dealer: Dealer, player: Player):
+    if player.current_card_value == 21 and dealer.current_card_value == 21:
+        print(display_gameplay_message("tied"))
+    elif player.current_card_value == 21 and dealer.current_card_value != 21:
+        print(display_gameplay_message("naturalwin"))
+    elif player.current_card_value != 21 and dealer.current_card_value == 21:
+        print(display_gameplay_message("naturalloss"))
+    else:
+        print(display_gameplay_message("nonatural"))
+            
+def display_gameplay_message(message_type: str):
+    display_message: str = "No message set, supply gameplay message"
+    
+    match message_type:
+        case "tied": 
+            display_message = "It looks like you've both got naturals, we've got a stand-off! No one wins and bets have been returned.\n"
+        case "naturalwin":
+            display_message= "Wow you're a natural! Congratulations, you win NO REWARD.\n" 
+        case "naturalloss":
+            display_message = "Oof, it looks like the Dealer got a natural. You'll get 'em next time Champ!\n"
+        case "nonatural":
+            display_message = "Looks like no one's a natural here today, play will continue.\n"
 
-gameshoe : DealingShoe = DealingShoe()
-dealer : Dealer = Dealer()
+    return display_message
+
+
+## Starts gameplay structure, called by main
+def play_game():
+    player : Player = Player()
+    dealer : Dealer = Dealer()
+    shoe : DealingShoe = DealingShoe()
+
+    initialize_game(dealer, player, shoe)
+
+    play_round(dealer, player, shoe)
+
 
 def main():
     play_game()
