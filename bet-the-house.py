@@ -47,6 +47,7 @@ class DealingShoe():
         self.total_decks : int = 4
         self.card_shoe : list[PlayingCard] = self._generate_card_shoe(self.total_decks)
         self.regen_threshold : float = (0.25 * (self.total_decks * 52))
+        self.generation_msg : str = "\nShuffling Shoe...\n"
         
     def _generate_card_shoe(self, decks: int):
         shoe : list[PlayingCard] = []
@@ -98,15 +99,19 @@ class Entity():
             print(card.name)
         print(f"\n{self.entity_name} Total Card Value: {self.current_card_value}\n")
 
-    def add_cards_to_inventory(self, cards_to_add: list[PlayingCard]):
+    def _draw_cards_to_inventory(self, cards_drawn: int = 1):
+        cards_to_add = self.gameshoe.draw_cards_from_shoe(cards_drawn)
+        
         for card in cards_to_add:
             self.inventory.append(card)
             self.current_card_value += card.value
 
-
     def clear_cards_from_inventory(self):
         self.inventory = []
         self.current_card_value = 0
+    
+    def deal_starting_hand(self):
+        pass
 
 class Dealer(Entity):
     
@@ -114,8 +119,14 @@ class Dealer(Entity):
         Entity.__init__(self)
         self.entity_name = "Dealer"
     
-    def deal_starting_hands(self):
-        pass
+    def display_starting_cards(self):
+        print(f"\n{self.entity_name} Currently Holds:\n" + self.inventory[0].name)
+        print(f"\n{self.entity_name} Has 1 Card Face-Down")
+        print(f"{self.entity_name} Total Known Card Value: {self.inventory[0].value}")
+
+    def deal_starting_hand(self):
+        self._draw_cards_to_inventory(2)
+        self.display_starting_cards()
 
 class Player(Entity):
    
@@ -128,17 +139,14 @@ class Player(Entity):
 
     def _process_player_action(self, chosen_action: str):
         if chosen_action == "hit":
-            added_cards: list [PlayingCard] = self.gameshoe.draw_cards_from_shoe(1)
-            for card in added_cards:
-                if card.type == "Ace":
-                    self._choose_ace_value(ace_card = card)
-            self.add_cards_to_inventory(cards_to_add= added_cards)
-            self._check_player_score()
+           self._player_hit()
         elif chosen_action == "stand":
             pass
+# Take one card, double bet, can no longer hit or double down
         elif chosen_action == "double down":
-            self.add_cards_to_inventory(self.gameshoe.draw_cards_from_shoe(2))
+            self._draw_cards_to_inventory(1)
             self._check_player_score()
+# Lose half bet, quit round, keep playing
         elif chosen_action == "forfeit":
             pass
         elif chosen_action == "quit game":
@@ -164,20 +172,31 @@ class Player(Entity):
     def _display_player_money(self):
         print(f"{self.entity_name} Current Money: {self.current_money}\n")
     
-    def _choose_ace_value(self, ace_card : PlayingCard, from_hand : bool = False):
-        if from_hand:
-            ace_msg : str = "\nType '1' or '11' for the value of the Ace in hand"
-        else:
-            ace_msg : str = "\nYou've been dealt and Ace! Please type either '1' or '11' for the Ace's value\n"
-        ace_value : int = input(f"{ace_msg}").lower()
-        if ace_value == "11":
-            ace_card.value = 11
-        if ace_value == "1":
-            ace_card.value = 1
-        else:
-            print(self.unrecognized_input_warning)
-            self._choose_ace_value(ace_card)
+    def _check_ace_values(self):
+        ace_name : str
+        ace_msg : str = (f"\nPlease type either '1' or '11' for the value of {ace_name}\n")
+        
+        for card in self.inventory:
+            if card.type == "Ace":
+                ace_name = card.name
+                ace_value : int = input(f"{ace_msg}").lower()
+                if ace_value == "11":
+                    card.value = 11
+                if ace_value == "1":
+                    card.value = 1
+                else:
+                    print(self.unrecognized_input_warning)
+                    self._check_ace_values(self)
 
+    def _player_hit(self):
+        self._draw_cards_to_inventory(1)
+        self._check_ace_values()
+        self._check_player_score()
+
+    def deal_starting_hand(self):
+        self._draw_cards_to_inventory(2)
+        self._display_inventory()
+    
     def offer_player_action(self):
         self._display_inventory()
         prompt_msg : str = "Available Actions: 'hit', 'stand', 'double down', 'forfeit', 'quit game'\n"
@@ -206,10 +225,6 @@ def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
 
     return interpreted_cards
 
-def play_round(dealer: Dealer, player: Player, shoe: DealingShoe):
-    dealer.deal_starting_hands()
-    check_natural_blackjack(dealer, player)
-
 def initialize_game(dealer: Dealer, player: Player, shoe: DealingShoe, starting_money: int = 500):
     player.gameshoe = shoe
     player.current_money = starting_money
@@ -226,14 +241,32 @@ def initialize_game(dealer: Dealer, player: Player, shoe: DealingShoe, starting_
     print(welcome_msg)
 
 def check_natural_blackjack(dealer: Dealer, player: Player):
+    message_type : str = "No message set, supply gameplay message"
+    is_natural_game : bool = True
+
     if player.current_card_value == 21 and dealer.current_card_value == 21:
-        print(display_gameplay_message("tied"))
+        message_type = "tied"
     elif player.current_card_value == 21 and dealer.current_card_value != 21:
-        print(display_gameplay_message("naturalwin"))
+        message_type = "naturalwin"
     elif player.current_card_value != 21 and dealer.current_card_value == 21:
-        print(display_gameplay_message("naturalloss"))
+        message_type = "naturalloss"
     else:
-        print(display_gameplay_message("nonatural"))
+        message_type = "nonatural"
+        is_natural_game = False
+    
+    print(display_gameplay_message(message_type))
+    return is_natural_game
+
+def play_round(dealer: Dealer, player: Player, shoe: DealingShoe):
+    dealing_msg : str = "\nDealing Cards...\n"
+    
+    print(dealing_msg)
+    dealer.deal_starting_hand()
+    player.deal_starting_hand()
+    if not check_natural_blackjack(dealer, player):
+        player.offer_player_action()
+
+
             
 def display_gameplay_message(message_type: str):
     display_message: str = "No message set, supply gameplay message"
