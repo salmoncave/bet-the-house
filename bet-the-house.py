@@ -1,6 +1,4 @@
 import random
-import pprint
-from enum import Enum
 
 class PlayingCard():
 
@@ -139,7 +137,8 @@ class Dealer(Entity):
                 does_have_aces = True
         
         return does_have_aces
-    
+
+#Need to fix ace gathering and processing
     def _get_aces(self):
         gathered_aces: list[PlayingCard] = []
 
@@ -171,7 +170,7 @@ class Dealer(Entity):
             pass
         elif self.current_card_value > 21:
             if self._has_aces():
-                self._decide_aces(self._get_aces)
+                self._decide_aces(self._get_aces())
 
     def dealer_play(self):
         self.display_inventory()
@@ -215,8 +214,8 @@ class Player(Entity):
     
     def _player_win(self):
         print(self.win_message)
-        self.display_inventory()
 
+##NEED FIX, DOES NOT WORK IN CURRENT GAME LOOP ANY LONGER
     def _player_loss(self):
         leave_msg = "Thanks for Playing, See Ya Later!"
         self.display_inventory()
@@ -239,14 +238,16 @@ class Player(Entity):
         for card in self.inventory:
             if card.type == "Ace":
                 ace_name = card.name
-                ace_value = input(f"\nType either '1' or '11' for the value of {ace_name}\n").lower()
+                print(f"\nCurrent card value without {ace_name} = {self.current_card_value - card.value}")
+                ace_value = input(f"Type either '1' or '11' for the value of {ace_name}\n").lower()
+                
                 if ace_value == "11":
                     card.value = 11
-                if ace_value == "1":
+                elif ace_value == "1":
                     card.value = 1
                 else:
                     print(self.unrecognized_input_warning)
-                    self._check_ace_values(self)
+                    self._check_ace_values()
         
         self._update_current_card_value()
 
@@ -286,6 +287,95 @@ class Player(Entity):
 
 '''---------- GAMEPLAY FUNCTIONS -----------'''
 
+class GameplayObject():
+    def __init__(self, dealer: Dealer, player: Player, shoe: DealingShoe) -> None:
+        self.dealer : Dealer = dealer
+        self.player : Player = player
+        self.shoe : DealingShoe = shoe
+        
+        self.player.gameshoe = shoe
+        self.dealer.gameshoe = shoe
+
+    def _display_gameplay_message(self, message_type: str):
+        display_message: str = "No message set, supply gameplay message"
+    
+        match message_type:
+            
+            case "dealerwin":
+                display_message = "\nOof too bad, looks like the dealer won this time.\n"
+            case "dealing":
+                display_message = "Shuffling Shoe...\n" + "\nDealing Cards...\n"
+            case "naturalloss":
+                display_message = "Oof, it looks like the Dealer got a natural. You'll get 'em next time Champ!\n"
+            case "naturalwin":
+                display_message= "Wow you're a natural! Congratulations, you win NO REWARD.\n" 
+            case "nonatural":
+                display_message = "Looks like no one's a natural here today, play will continue.\n"
+            case "playerwin": 
+                display_message = "\nWow you've won, congradulations! You've earned: NOTHING\n"
+            case "tied": 
+                display_message = "It looks like you've both got naturals, we've got a stand-off! No one wins and bets have been returned.\n"
+            case "welcome":
+                display_message = ("\n" + "\n" + "\n"
+                        "--------------------------------------------\n" +
+                        "Welcome to the Digital Arts Casino!\n" +
+                        "You can't waste real money here, but at least you can pretend like you're not wasting your time!\n" +
+                        "Let's get started shall we? Here we go!\n"
+                        "--------------------------------------------\n")
+
+        print(display_message)
+
+    def _natural_blackjack(self, dealer: Dealer, player: Player):
+        message_type : str = "No message set, supply gameplay message"
+        is_natural_game : bool = True
+
+        if player.current_card_value == 21 and dealer.current_card_value == 21:
+            message_type = "tied"
+        elif player.current_card_value == 21 and dealer.current_card_value != 21:
+            message_type = "naturalwin"
+        elif player.current_card_value != 21 and dealer.current_card_value == 21:
+            message_type = "naturalloss"
+        else:
+            message_type = "nonatural"
+            is_natural_game = False
+
+        self._display_gameplay_message(message_type)
+    
+        return is_natural_game
+    
+    def _display_all_cards(self):
+        self.dealer.display_inventory()
+        self.player.display_inventory()
+    
+    def _resolve_round_scores(self):
+        if self.player.current_card_value > self.dealer.current_card_value or self.dealer.current_card_value > 21:
+            self._display_gameplay_message("playerwin")
+        else:
+            self._display_gameplay_message("dealerwin")
+
+    def start_game(self):
+        self._display_gameplay_message("welcome")
+        self._display_gameplay_message("dealing")
+
+        self._play_round()
+    
+    def _play_round(self):
+        dealer : Dealer = self.dealer
+        player : Player = self.player
+        
+        dealer.deal_starting_hand()
+        player.deal_starting_hand()
+        if not self._natural_blackjack(dealer, player):
+            dealer.display_starting_cards()
+            player.offer_player_action()
+        if player.is_standing:
+            print("Player Standing, Dealer Action")
+            dealer.dealer_play()
+            self._resolve_round_scores()
+        else:
+            self._display_all_cards()
+            print("Round Ended")
+
 #CURRENTLY DEPRECATED
 def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
     interpreted_cards : list[str] = []
@@ -296,81 +386,6 @@ def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
 
     return interpreted_cards
 
-def initialize_game(dealer: Dealer, player: Player, shoe: DealingShoe, starting_money: int = 500):
-    player.gameshoe = shoe
-    player.current_money = starting_money
-    
-    dealer.gameshoe = shoe
-
-    welcome_msg : str = ("\n" + "\n" + "\n"
-                        "--------------------------------------------\n" +
-                        "Welcome to the Digital Arts Casino!\n" +
-                        "You can't waste real money here, but at least you can pretend like you're not wasting your time!\n" +
-                        "Let's get started shall we? Here we go!\n"
-                        "--------------------------------------------\n")
-    dealing_msg : str = "\nDealing Cards...\n"
-    generation_msg : str = "Shuffling Shoe...\n"
-
-    print(welcome_msg)
-    print(dealing_msg)  
-    print(generation_msg)
-
-def check_natural_blackjack(dealer: Dealer, player: Player):
-    message_type : str = "No message set, supply gameplay message"
-    is_natural_game : bool = True
-
-    if player.current_card_value == 21 and dealer.current_card_value == 21:
-        message_type = "tied"
-    elif player.current_card_value == 21 and dealer.current_card_value != 21:
-        message_type = "naturalwin"
-    elif player.current_card_value != 21 and dealer.current_card_value == 21:
-        message_type = "naturalloss"
-    else:
-        message_type = "nonatural"
-        is_natural_game = False
-
-    print(display_gameplay_message(message_type))
-    if is_natural_game:
-        display_held_cards(dealer, player)
-    
-    return is_natural_game
-
-def play_round(dealer: Dealer, player: Player, shoe: DealingShoe):
-    dealer.deal_starting_hand()
-    player.deal_starting_hand()
-    if not check_natural_blackjack(dealer, player):
-        dealer.display_starting_cards()
-        player.offer_player_action()
-    if player.is_standing:
-        print("Player Standing, Dealer Action")
-        dealer.dealer_play()
-    else:
-        print("Round Ended")
-
-def display_held_cards(dealer: Dealer, player: Player):
-    dealer.display_inventory()
-    player.display_inventory()
-            
-def display_gameplay_message(message_type: str):
-    display_message: str = "No message set, supply gameplay message"
-    
-    match message_type:
-        case "tied": 
-            display_message = "It looks like you've both got naturals, we've got a stand-off! No one wins and bets have been returned.\n"
-        case "naturalwin":
-            display_message= "Wow you're a natural! Congratulations, you win NO REWARD.\n" 
-        case "naturalloss":
-            display_message = "Oof, it looks like the Dealer got a natural. You'll get 'em next time Champ!\n"
-        case "nonatural":
-            display_message = "Looks like no one's a natural here today, play will continue.\n"
-
-    return display_message
-
-def resolve_round_scores(dealer: Dealer, player: Player):
-    if player.current_card_value > dealer.current_card_value:
-        pass
-    else:
-        pass
 
 ## Starts gameplay structure, called by main
 ## MAY MOVE GAMEPLAY AND ALL OBJECTS TO GameObject Class AND CALL GameObject.play_game on main
@@ -378,10 +393,10 @@ def play_game():
     player : Player = Player()
     dealer : Dealer = Dealer()
     shoe : DealingShoe = DealingShoe()
+    
+    game_object : GameplayObject = GameplayObject(player= player, dealer= dealer, shoe= shoe)
 
-    initialize_game(dealer, player, shoe)
-
-    play_round(dealer, player, shoe)
+    game_object.start_game()
 
 
 def main():
