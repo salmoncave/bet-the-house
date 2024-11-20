@@ -130,6 +130,53 @@ class Dealer(Entity):
         print(f"\n{self.entity_name} Currently Holds:\n" + self.inventory[0].name)
         print(f"\n{self.entity_name} Has 1 Card Face-Down")
         print(f"{self.entity_name} Total Known Card Value: {self.inventory[0].value}")
+    
+    def _has_aces(self):
+        does_have_aces: bool = False
+        
+        for card in self.inventory:
+            if card.type == "Ace":
+                does_have_aces = True
+        
+        return does_have_aces
+    
+    def _get_aces(self):
+        gathered_aces: list[PlayingCard] = []
+
+        for card in self.inventory:
+            if card.type == "Ace":
+                gathered_aces.append(card)
+        
+        return gathered_aces
+   
+    def _decide_aces(self, gathered_aces: list[PlayingCard]):
+        for ace in gathered_aces:
+            ace.value = 1
+    
+    def _should_hit(self):
+        if self.current_card_value >= 17:
+            return False
+        else:
+            return True
+        
+    def _dealer_hit(self):
+        self._draw_cards_to_inventory(1)
+        self.display_inventory()
+        self._process_score()
+
+    def _process_score(self):
+        if self._should_hit():
+            self._dealer_hit()
+        elif self.current_card_value == 21:
+            pass
+        elif self.current_card_value > 21:
+            if self._has_aces():
+                self._decide_aces(self._get_aces)
+
+    def dealer_play(self):
+        self.display_inventory()
+        if self._should_hit():
+            self._dealer_hit()
 
 class Player(Entity):
    
@@ -137,6 +184,7 @@ class Player(Entity):
         Entity.__init__(self)
         self.entity_name: str = "Player"
         self.current_money: int = 0
+        self.is_standing: bool = False
         self.unrecognized_input_warning: str = "Invalid Input Detected, Please Try Again!\n"
         self.win_message : str = "\nCongrats, you've hit Blackjack! You Win: NOTHING\n"
         self.loss_message : str = "\nYou've Lost! Too Bad, Restart Game?\n"
@@ -153,13 +201,17 @@ class Player(Entity):
         elif chosen_action == "quit game":
             pass
 
-    def _check_player_score(self):
+    def _round_end_score(self):
+        does_end: bool = True
+
         if self.current_card_value > 21:
             self._player_loss()
         elif self.current_card_value == 21:
             self._player_win()
         else:
-            self.offer_player_action()
+            does_end = False
+
+        return does_end
     
     def _player_win(self):
         print(self.win_message)
@@ -201,16 +253,20 @@ class Player(Entity):
     def _player_hit(self):
         self._draw_cards_to_inventory(1)
         self._check_ace_values()
-        self._check_player_score()
+        if not self._round_end_score():
+            self.offer_player_action()
     
     def _player_double_down(self):
-        pass
+        self._draw_cards_to_inventory(1)
+        self._check_ace_values()
+        if not self._round_end_score():
+            self.is_standing = True
 
     def _player_forfeit(self):
         pass
     
     def _player_stand(self):
-        pass
+        self.is_standing = True
 
     def offer_player_action(self):
         self.display_inventory()
@@ -228,9 +284,9 @@ class Player(Entity):
             print(self.unrecognized_input_warning)
             self.offer_player_action()
 
-
 '''---------- GAMEPLAY FUNCTIONS -----------'''
 
+#CURRENTLY DEPRECATED
 def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
     interpreted_cards : list[str] = []
     interpreted_cards.clear()
@@ -285,6 +341,11 @@ def play_round(dealer: Dealer, player: Player, shoe: DealingShoe):
     if not check_natural_blackjack(dealer, player):
         dealer.display_starting_cards()
         player.offer_player_action()
+    if player.is_standing:
+        print("Player Standing, Dealer Action")
+        dealer.dealer_play()
+    else:
+        print("Round Ended")
 
 def display_held_cards(dealer: Dealer, player: Player):
     dealer.display_inventory()
@@ -305,8 +366,14 @@ def display_gameplay_message(message_type: str):
 
     return display_message
 
+def resolve_round_scores(dealer: Dealer, player: Player):
+    if player.current_card_value > dealer.current_card_value:
+        pass
+    else:
+        pass
 
 ## Starts gameplay structure, called by main
+## MAY MOVE GAMEPLAY AND ALL OBJECTS TO GameObject Class AND CALL GameObject.play_game on main
 def play_game():
     player : Player = Player()
     dealer : Dealer = Dealer()
