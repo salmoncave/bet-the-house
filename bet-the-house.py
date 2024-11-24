@@ -8,6 +8,7 @@ class PlayingCard():
         self.type : str = card_type
         self.value : int = self._calculate_card_value(card_type)
         self.name : str = (f"{self.type} of {self.suit}")
+        self.ascii : str = self._store_ascii_values(self.suit, self.type)
 
     def _calculate_card_value(self, card_type: str):
         face_cards : list[str] = ["Jack", "Queen", "King"]
@@ -18,6 +19,58 @@ class PlayingCard():
             return int(card_type)
         else:
             return 10
+
+    def _store_ascii_values(self, suit: str, type: str):
+        suit_art: dict[str] = {
+            "Clubs" : """
+       .+XX+.       
+     .$&&&&&&X      
+     +&&&&&&&&;     
+     .&&&&&&&$      
+  ;&&&&&&&&&&&&&&;  
+ +&&&&&&&&&&&&&&&&; 
+ +&&&&&&&&&&&&&&&&+ 
+  +&&&&&+$X+&&&&&+  
+        +&&+        
+       ......       """,
+
+            "Diamonds" : """                    
+         &&         
+       &&&&&&       
+      &&&&&&&&      
+    &&&&&&&&&&&&    
+  &&&&&&&&&&&&&&&&  
+    &&&&&&&&&&&&    
+      &&&&&&&&      
+       &&&&&&       
+         &&         """,
+
+            "Hearts" : """              
+   &&&&&&  &&&&&&   
+  &&&&&&&&&&&&&&&&  
+ &&&&&&&&&&&&&&&&&& 
+  &&&&&&&&&&&&&&&&  
+   &&&&&&&&&&&&&&   
+     &&&&&&&&&&     
+       &&&&&&       
+        &&&&        
+                    """,
+
+            "Spades" : """
+        &&&&        
+      &&&&&&&&      
+    &&&&&&&&&&&&    
+   &&&&&&&&&&&&&&   
+  &&&&&&&&&&&&&&&&  
+ &&&&&&&&&&&&&&&&&  
+  &&&&&&&&&&&&&&&&  
+    &&&  &&  &&&    
+        &&&&        """, 
+        }
+
+        return_suit: str = suit_art[self.suit]
+
+        return return_suit
 
 class StandardDeck():
     
@@ -94,7 +147,9 @@ class Entity():
         print(f"\n{self.entity_name} Currently Holds:")
         for card in self.inventory:
             print(card.name)
+            print(card.ascii)
         print(f"\n{self.entity_name} Total Card Value: {self.current_card_value}\n")
+        
 
     def _draw_cards_to_inventory(self, cards_drawn: int = 1):
         cards_to_add = self.gameshoe.draw_cards_from_shoe(cards_drawn)
@@ -316,9 +371,23 @@ class GameplayObject():
             case "tied": 
                 display_message = "It looks like you've both got naturals, we've got a stand-off! No one wins and bets have been returned.\n"
             case "welcome":
+                casino_name: str = r""" 
+ /$$$$$$$  /$$           /$$   /$$               /$$        /$$$$$$              /$$                     /$$$$$$                      /$$                     /$$ /$$
+| $$__  $$|__/          |__/  | $$              | $$       /$$__  $$            | $$                    /$$__  $$                    |__/                    | $$| $$
+| $$  \ $$ /$$  /$$$$$$  /$$ /$$$$$$    /$$$$$$ | $$      | $$  \ $$  /$$$$$$  /$$$$$$   /$$$$$$$      | $$  \__/  /$$$$$$   /$$$$$$$ /$$ /$$$$$$$   /$$$$$$ | $$| $$
+| $$  | $$| $$ /$$__  $$| $$|_  $$_/   |____  $$| $$      | $$$$$$$$ /$$__  $$|_  $$_/  /$$_____/      | $$       |____  $$ /$$_____/| $$| $$__  $$ /$$__  $$| $$| $$
+| $$  | $$| $$| $$  \ $$| $$  | $$      /$$$$$$$| $$      | $$__  $$| $$  \__/  | $$   |  $$$$$$       | $$        /$$$$$$$|  $$$$$$ | $$| $$  \ $$| $$  \ $$|__/|__/
+| $$  | $$| $$| $$  | $$| $$  | $$ /$$ /$$__  $$| $$      | $$  | $$| $$        | $$ /$$\____  $$      | $$    $$ /$$__  $$ \____  $$| $$| $$  | $$| $$  | $$        
+| $$$$$$$/| $$|  $$$$$$$| $$  |  $$$$/|  $$$$$$$| $$      | $$  | $$| $$        |  $$$$//$$$$$$$/      |  $$$$$$/|  $$$$$$$ /$$$$$$$/| $$| $$  | $$|  $$$$$$/ /$$ /$$
+|_______/ |__/ \____  $$|__/   \___/   \_______/|__/      |__/  |__/|__/         \___/ |_______/        \______/  \_______/|_______/ |__/|__/  |__/ \______/ |__/|__/
+               /$$  \ $$                                                                                                                                             
+              |  $$$$$$/                                                                                                                                             
+               \______/                                                                                                                                              
+         """
                 display_message = ("\n" + "\n" + "\n"
                         "--------------------------------------------\n" +
-                        "Welcome to the Digital Arts Casino!\n" +
+                        "Welcome to the\n" +
+                        casino_name + "\n" +
                         "You can't waste real money here, but at least you can pretend like you're not wasting your time!\n" +
                         "Let's get started shall we? Here we go!\n"
                         "--------------------------------------------\n")
@@ -385,7 +454,6 @@ def interpret_card_names_to_text(cards : list[PlayingCard]) -> list[str] :
             interpreted_cards.append(card.name)
 
     return interpreted_cards
-
 
 ## Starts gameplay structure, called by main
 ## MAY MOVE GAMEPLAY AND ALL OBJECTS TO GameObject Class AND CALL GameObject.play_game on main
