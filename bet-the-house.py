@@ -1,4 +1,5 @@
 import random
+import time
 
 class PlayingCard():
 
@@ -8,7 +9,7 @@ class PlayingCard():
         self.type : str = card_type
         self.value : int = self._calculate_card_value(card_type)
         self.name : str = (f"{self.type} of {self.suit}")
-        self.ascii : str = self._store_ascii_values(self.suit, self.type)
+        self.emoji : str = self._store_emoji_values(self.suit, self.type)
 
     def _calculate_card_value(self, card_type: str):
         face_cards : list[str] = ["Jack", "Queen", "King"]
@@ -20,52 +21,15 @@ class PlayingCard():
         else:
             return 10
 
-    def _store_ascii_values(self, suit: str, type: str):
+    def _store_emoji_values(self, suit: str, type: str):
         suit_art: dict[str] = {
-            "Clubs" : """
-       .+XX+.       
-     .$&&&&&&X      
-     +&&&&&&&&;     
-     .&&&&&&&$      
-  ;&&&&&&&&&&&&&&;  
- +&&&&&&&&&&&&&&&&; 
- +&&&&&&&&&&&&&&&&+ 
-  +&&&&&+$X+&&&&&+  
-        +&&+        
-       ......       """,
+            "Clubs" : "♣️",
 
-            "Diamonds" : """                    
-         &&         
-       &&&&&&       
-      &&&&&&&&      
-    &&&&&&&&&&&&    
-  &&&&&&&&&&&&&&&&  
-    &&&&&&&&&&&&    
-      &&&&&&&&      
-       &&&&&&       
-         &&         """,
+            "Diamonds" : "♦️",
 
-            "Hearts" : """              
-   &&&&&&  &&&&&&   
-  &&&&&&&&&&&&&&&&  
- &&&&&&&&&&&&&&&&&& 
-  &&&&&&&&&&&&&&&&  
-   &&&&&&&&&&&&&&   
-     &&&&&&&&&&     
-       &&&&&&       
-        &&&&        
-                    """,
+            "Hearts" : "♥️",
 
-            "Spades" : """
-        &&&&        
-      &&&&&&&&      
-    &&&&&&&&&&&&    
-   &&&&&&&&&&&&&&   
-  &&&&&&&&&&&&&&&&  
- &&&&&&&&&&&&&&&&&  
-  &&&&&&&&&&&&&&&&  
-    &&&  &&  &&&    
-        &&&&        """, 
+            "Spades" : "♠️", 
         }
 
         return_suit: str = suit_art[self.suit]
@@ -144,11 +108,10 @@ class Entity():
         self.current_card_value : int = 0
 
     def display_inventory(self):
-        print(f"\n{self.entity_name} Currently Holds:")
+        self._slow_print(print_msg = (f"\n{self.entity_name} Holds:\n"), display_speed = 0.05)
         for card in self.inventory:
-            print(card.name)
-            print(card.ascii)
-        print(f"\n{self.entity_name} Total Card Value: {self.current_card_value}\n")
+            self._slow_print(print_msg = (f"{card.value}{card.emoji}\n"), display_speed = 0.1)
+        self._slow_print((f"\n{self.entity_name} Total Card Value: {self.current_card_value}\n"), 0.05)
         
 
     def _draw_cards_to_inventory(self, cards_drawn: int = 1):
@@ -165,6 +128,11 @@ class Entity():
             new_card_value += card.value
         
         self.current_card_value = new_card_value
+    
+    def _slow_print(self, print_msg: str = "None", display_speed: int = 0.01):
+        for character in print_msg:
+           print(character, end="", flush= True)
+           time.sleep(display_speed) 
 
     def clear_cards_from_inventory(self):
         self.inventory = []
@@ -287,12 +255,10 @@ class Player(Entity):
         print(f"{self.entity_name} Current Money: {self.current_money}\n")
     
     def _check_ace_values(self):
-        #ace_name : str = "No Ace Chosen"
-        #ace_msg : str = (f"\nPlease type either '1' or '11' for the value of {ace_name}\n")
         
         for card in self.inventory:
             if card.type == "Ace":
-                ace_name = card.name
+                ace_name = (f"{card.value} {card.emoji}")
                 print(f"\nCurrent card value without {ace_name} = {self.current_card_value - card.value}")
                 ace_value = input(f"Type either '1' or '11' for the value of {ace_name}\n").lower()
                 
@@ -351,7 +317,7 @@ class GameplayObject():
         self.player.gameshoe = shoe
         self.dealer.gameshoe = shoe
 
-    def _display_gameplay_message(self, message_type: str):
+    def _display_gameplay_message(self, message_type: str, display_speed: int = 0.01):
         display_message: str = "No message set, supply gameplay message"
     
         match message_type:
@@ -392,7 +358,9 @@ class GameplayObject():
                         "Let's get started shall we? Here we go!\n"
                         "--------------------------------------------\n")
 
-        print(display_message)
+        for character in display_message:
+            print(character, end="", flush= True)
+            time.sleep(display_speed)
 
     def _natural_blackjack(self, dealer: Dealer, player: Player):
         message_type : str = "No message set, supply gameplay message"
@@ -423,7 +391,7 @@ class GameplayObject():
             self._display_gameplay_message("dealerwin")
 
     def start_game(self):
-        self._display_gameplay_message("welcome")
+        self._display_gameplay_message("welcome", 0.0025)
         self._display_gameplay_message("dealing")
 
         self._play_round()
