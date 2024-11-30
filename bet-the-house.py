@@ -284,6 +284,7 @@ class Player(Entity):
         self._draw_cards_to_inventory(1)
         self._check_ace_values()
         if not self._round_end_score():
+            self.display_inventory()
             self.is_standing = True
 
     def _player_forfeit(self):
@@ -335,7 +336,7 @@ class GameplayObject():
             case "nonatural":
                 display_message = "\nLooks like no one's a natural here today, play will continue.\n"
             case "playerwin": 
-                display_message = "\nWow you've won, congradulations! You've earned: NOTHING"
+                display_message = "\nWow you've won, congradulations! You've earned: NOTHING\n"
             case "scores":
                 display_message = (
                 f"\nPlayer Score: {self.player.current_card_value}\n" +
