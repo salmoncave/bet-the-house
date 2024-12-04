@@ -1,7 +1,7 @@
 # Bet The House
 
 ## Demo
-Demo Video: <URL>
+Demo Video: <https://youtu.be/MDt6POcndfI>
 
 ## GitHub Repository
 GitHub Repo: <https://github.com/salmoncave/bet-the-house/tree/main>
@@ -9,7 +9,7 @@ GitHub Repo: <https://github.com/salmoncave/bet-the-house/tree/main>
 ## Description
 
 >   Bet The House is a simple Blackjack simulator. The events of the game are printed to the terminal and all of the player's actions
-(Hit, Stand, Double Down, Quit) are recorded using input commands. All actions in Blackjack, aside from splitting, are available and the program offers an accurate simulation of real life card mechanics. All of the logic is performed through various classes present in the single python file.
+(Hit, Stand, Double Down, Quit) are recorded using input commands. All actions in Blackjack, aside from splitting, are available and the program offers an accurate simulation of real life card mechanics. A professionally trained Blackjack dealer was consulted on the card game's structure and dealer actions present in the game. All of the logic is performed through various classes present in the single python file.
     
 ## Simulation Specifics
 
