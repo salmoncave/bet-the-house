@@ -179,8 +179,8 @@ class Dealer(Entity):
         
     def _dealer_hit(self):
         self._draw_cards_to_inventory(1)
-        self._process_score()
         self.display_inventory()
+        self._process_score()
     
     def _print_action_message(self, action : str):
         self._slow_print("\nDealer will")
